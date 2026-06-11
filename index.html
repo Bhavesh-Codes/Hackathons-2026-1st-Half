@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bhavesh Jalalbisht // Hackathon Journey</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"Space Mono"', 'monospace'],
+            sans: ['"DM Sans"', 'sans-serif'],
+          },
+          colors: {
+            terminalBg: '#0a0a0a',
+            accentLime: '#c8f060',
+            accentCyan: '#60d4f0',
+            cardBg: '#161616',
+            borderMuted: '#2a2a2a',
+            accentLimeLight: '#65a30d', 
+            accentCyanLight: '#0891b2',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --grid-color: #e5e7eb;
+      --active-border: #65a30d;
+      --active-shadow: rgba(101, 163, 13, 0.08);
+    }
+    
+    .dark {
+      --grid-color: #141414;
+      --active-border: #c8f060;
+      --active-shadow: rgba(200, 240, 96, 0.03);
+    }
+
+    .grid-bg {
+      background-image: linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 4rem 4rem;
+      transition: background-image 0.3s ease;
+    }
+
+    .expand-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .expanded .expand-content {
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .card-active {
+      border-color: var(--active-border) !important;
+      box-shadow: 0 0 40px var(--active-shadow);
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .caret-blink { animation: blink 1s infinite; }
+
+    .terminal-scrollbar::-webkit-scrollbar { width: 4px; }
+    .terminal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark .terminal-scrollbar::-webkit-scrollbar-thumb { background: #333; }
+    
+    .theme-icon-transition {
+      transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), opacity 0.3s ease;
+    }
+
+    /* subtle scroll hint */
+    .scroll-hint {
+      animation: soft-bounce 2s infinite ease-in-out;
+    }
+    @keyframes soft-bounce {
+      0%, 100% { transform: translateY(0); opacity: 0.5; }
+      50% { transform: translateY(4px); opacity: 1; }
+    }
+
+    /* expand indicator transition */
+    .expand-indicator svg {
+      transition: transform 0.2s ease;
+    }
+    .expanded .expand-indicator svg {
+      transform: rotate(180deg);
+    }
+
+    /* problem statement truncation */
+    .ps-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .expanded .ps-text {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+
+    /* ── Photo gallery grid ── */
+    .photo-gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); /* max 2 on mobile */
+      gap: 0.625rem;
+    }
+    @media (min-width: 768px) {
+      .photo-gallery { gap: 0.875rem; }
+      .photo-gallery.md-cols-2 { grid-template-columns: repeat(2, 1fr); }
+      .photo-gallery.md-cols-3 { grid-template-columns: repeat(3, 1fr); }
+      .photo-gallery.md-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .photo-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 0.625rem;
+      background: #111;
+      aspect-ratio: 4/3;
+      cursor: pointer;
+    }
+    @media (min-width: 640px) { .photo-item { border-radius: 0.875rem; } }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.3s ease;
+      opacity: 0.82;
+      display: block;
+    }
+    .photo-item:hover img {
+      transform: scale(1.06);
+      opacity: 1;
+    }
+
+    /* click-to-expand overlay */
+    .photo-item .expand-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      background: rgba(0,0,0,0);
+      transition: background 0.3s ease;
+    }
+    .photo-item:hover .expand-overlay {
+      background: rgba(0,0,0,0.28);
+    }
+    .expand-overlay .expand-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .photo-item:hover .expand-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .expand-icon svg { color: #fff; width: 1rem; height: 1rem; }
+    .expand-overlay .expand-hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      opacity: 0;
+      transition: opacity 0.25s ease 0.05s;
+    }
+    .photo-item:hover .expand-hint { opacity: 1; }
+
+    /* label at bottom */
+    .photo-item .photo-label {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 1.25rem 0.6rem 0.4rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .photo-item:hover .photo-label { opacity: 1; }
+
+    /* ── Lightbox modal ── */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #lightbox.lb-open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #lightbox .lb-img-wrap {
+      position: relative;
+      max-width: min(92vw, 1100px);
+      max-height: 85vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #lightbox .lb-img-wrap img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 0.75rem;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      display: block;
+    }
+    #lightbox .lb-img-wrap img.lb-slide-out-left  { opacity:0; transform: translateX(-32px); }
+    #lightbox .lb-img-wrap img.lb-slide-out-right { opacity:0; transform: translateX( 32px); }
+    #lightbox .lb-img-wrap img.lb-slide-in-left   { opacity:0; transform: translateX( 32px); }
+    #lightbox .lb-img-wrap img.lb-slide-in-right  { opacity:0; transform: translateX(-32px); }
+    #lightbox .lb-img-wrap img.lb-visible         { opacity:1; transform: translateX(0); }
+
+    /* nav buttons */
+    .lb-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: background 0.2s, transform 0.2s;
+      z-index: 10001;
+    }
+    .lb-btn:hover { background: rgba(255,255,255,0.22); transform: translateY(-50%) scale(1.08); }
+    .lb-btn svg { width: 1.25rem; height: 1.25rem; }
+    #lb-prev { left: clamp(0.75rem, 3vw, 2.5rem); }
+    #lb-next { right: clamp(0.75rem, 3vw, 2.5rem); }
+    #lb-close {
+      position: fixed;
+      top: 1rem; right: 1rem;
+      width: 2.5rem; height: 2.5rem;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #fff;
+      transition: background 0.2s, transform 0.2s;
+      z-index: 10001;
+    }
+    #lb-close:hover { background: rgba(220,50,50,0.4); transform: scale(1.1); }
+    #lb-close svg { width: 1.1rem; height: 1.1rem; }
+
+    /* counter + label */
+    #lb-meta {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      z-index: 10001;
+    }
+    #lb-counter {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+    #lb-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+    }
+
+    /* dot indicators */
+    #lb-dots {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .lb-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      transition: background 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .lb-dot.active {
+      background: #c8f060;
+      transform: scale(1.4);
+    }
+  </style>
+</head>
+<body class="font-sans min-h-screen bg-gray-50 dark:bg-terminalBg text-gray-900 dark:text-[#e5e5e5] selection:bg-accentLimeLight dark:selection:bg-accentLime selection:text-white dark:selection:text-black antialiased relative overflow-x-hidden transition-colors duration-300">
+
+  <div class="fixed inset-0 grid-bg [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
+
+  <main class="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-24 relative z-10">
+    
+    <div class="absolute top-4 right-4 md:top-12 md:right-12 z-50">
+      <button id="theme-toggle" class="relative p-3 rounded-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-borderMuted shadow-sm hover:shadow-md dark:shadow-none dark:hover:border-gray-500 transition-all duration-300 focus:outline-none overflow-hidden group">
+        <svg id="icon-sun" class="w-5 h-5 text-gray-400 group-hover:text-yellow-400 theme-icon-transition dark:opacity-100 dark:rotate-0 opacity-0 -rotate-90 absolute top-3 left-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <svg id="icon-moon" class="w-5 h-5 text-gray-600 group-hover:text-indigo-500 theme-icon-transition opacity-100 rotate-0 dark:opacity-0 dark:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      </button>
+    </div>
+
+    <header class="mb-10 md:mb-12 pt-8 md:pt-0">
+      <div class="flex items-center space-x-3 mb-4 md:mb-6">
+        <div class="w-2 h-2 rounded-full bg-accentLimeLight dark:bg-accentLime shadow-[0_0_8px_rgba(101,163,13,0.5)] dark:shadow-[0_0_8px_#c8f060]"></div>
+        <span class="font-mono text-[10px] md:text-xs tracking-[0.3em] text-accentLimeLight dark:text-accentLime uppercase">// Bhavesh Jalalbisht</span>
+      </div>
+
+      <h1 class="text-[2rem] md:text-7xl font-bold font-mono tracking-tight text-gray-900 dark:text-white leading-[1.15] transition-colors duration-300">
+        Documented timeline of my <span class="text-accentLimeLight dark:text-accentLime shadow-[inset_0_-0.15em_0_0_rgba(101,163,13,0.2)] border-b-[3px] md:border-b-4 border-accentLimeLight dark:shadow-[inset_0_-0.15em_0_0_rgba(200,240,96,0.3)] dark:border-accentLime pb-1">hackathon</span> journey and learnings.
+      </h1>
+    </header>
+
+    <section class="mb-10 border border-gray-200 dark:border-borderMuted rounded-xl bg-white/80 dark:bg-black/90 backdrop-blur-sm overflow-hidden shadow-xl dark:shadow-2xl relative transition-colors duration-300">
+      <div class="bg-gray-100 dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-borderMuted px-4 py-2.5 md:px-5 md:py-3 flex items-center justify-between transition-colors duration-300">
+        <div class="flex items-center space-x-2">
+          <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ff5f56]"></div>
+          <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#ffbd2e]"></div>
+          <div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#27c93f]"></div>
+          <span class="ml-3 md:ml-4 text-[9px] md:text-[10px] font-mono text-gray-500 uppercase tracking-widest">bhavesh_v1.sh</span>
+        </div>
+      </div>
+      
+      <div class="p-5 md:p-8 font-mono text-xs md:text-sm min-h-[200px] max-h-[350px] md:min-h-[250px] md:max-h-[400px] overflow-y-auto terminal-scrollbar" id="terminal-body">
+        <div id="terminal-output" class="space-y-2">
+          <div class="text-accentLimeLight dark:text-accentLime">Terminal Initialized...</div>
+          <div class="text-gray-900 dark:text-white mt-3 mb-3 md:mt-4 md:mb-4 font-bold transition-colors duration-300">Welcome. Type <span class="text-accentCyanLight dark:text-accentCyan">help</span> to explore Bhavesh's journey.</div>
+        </div>
+        <div class="flex items-start space-x-2 md:space-x-3 mt-3 md:mt-4">
+          <span class="text-accentCyanLight dark:text-accentCyan font-bold shrink-0 transition-colors duration-300">bhavesh@pc:~$</span>
+          <div class="flex-1 relative">
+            <input type="text" id="terminal-input" class="w-full bg-transparent border-none outline-none text-gray-900 dark:text-white caret-transparent font-mono relative z-10" autocomplete="off" spellcheck="false" />
+            <span id="terminal-cursor" class="absolute left-0 top-0 w-[6px] h-[14px] md:w-[8px] md:h-[18px] bg-accentLimeLight dark:bg-accentLime caret-blink pointer-events-none transition-colors duration-300"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center mb-12 md:mb-16 opacity-60 hover:opacity-100 transition-opacity duration-300">
+      <div class="inline-flex flex-col items-center text-gray-400 dark:text-gray-500 text-[10px] md:text-[11px] font-mono tracking-wider">
+        <span class="mb-1">↓ more projects below</span>
+        <svg class="w-4 h-4 scroll-hint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
+      </div>
+    </div>
+
+    <script>
+      const PROJECTS = [
+        { 
+          id: '01', name: 'Baithak', college: 'Thakur Ramnarayan College, Mumbai', hackathon: 'Hackcrypt', date: '2026', duration: '30H', team: 'Team Nirvana', tech: ['react', 'vitejs', 'typescript', 'bun'], 
+          ps: "Students lack a centralized, lightweight platform to find peers, form study groups, and collaboratively share and rate learning resources. The solution required a platform for seamless group formation, content sharing, and community engagement.", 
+          approach: "Going into my first 24-hour hackathon, we were overly ambitious and eager to experiment with bleeding-edge tech, opting for Bun.js and Convex over traditional stacks. I took ownership of the frontend, spending over half the allotted time perfecting complex scroll animations for a killer landing page. When backend integration completely failed around midnight, we nearly threw in the towel. Instead, fueled by coffee and advice from the community, I stayed up all night migrating our entire architecture to Supabase—a platform I had never used before—just to ensure we had a working prototype to demo.", 
+          learning: "This was a massive crash course in time management and the dangers of 'shiny object syndrome.' I learned the hard way that under a strict deadline, well-documented, reliable tools trump hyped new tech. Over-investing time in making the perfect product name the best logo and UI aesthetics almost cost us the build. However, executing a midnight database pivot and pushing through the urge to quit taught me how to triage critical blockers under pressure and the true value of shipping functional software over chasing perfection.", 
+          github: 'https://github.com/Bhavesh-Codes/HackCrypt-305.git', deployment: 'https://bhavesh-codes.github.io/HackCrypt-305/', demo: '',
+          images: [
+            { src: '1.a.png', label: 'Interface' },
+            { src: '1.b.png', label: 'Flow' },
+            { src: '1.c.png', label: 'Demo' }
+          ]
+        },
+        { 
+          id: '02', name: 'CI/CD pipeline', college: 'APSIT, Thane', hackathon: 'Opstorm', date: '2026', duration: '6H', team: 'Team Nirvana', tech: ['docker', 'github', 'bash', 'terraform'], 
+          ps: "Code is frequently pushed to production with vulnerabilities, exposing cloud applications to security breaches via compromised dependencies and misconfigured infrastructure. The objective was to design an automated CI/CD pipeline that proactively scans for and blocks insecure deployments.", 
+          approach: "Walking into a 6-hour DevOps hackathon as absolute beginners, we expected a standard web app prompt and quickly realized we were in over our heads. Having no prior experience with CI/CD pipelines, I decided to treat the tight time crunch as an intense, on-the-spot bootcamp. Instead of blindly writing code or copying templates, I dove deep into the documentation for Docker, GitHub Actions, and Jenkins. I focused my energy on understanding how automated security checks, testing, and containerization actually fit together to form a secure deployment architecture.", 
+          learning: "This was the rare event where I wrote the least amount of code but gained the most knowledge. We didn't ship a flawless enterprise pipeline, but wrestling with these concepts in real-time completely demystified DevOps for me. Thanks to incredibly supportive mentors who broke down complex cloud infrastructure, my perspective fundamentally shifted. I walked away understanding that safely automating and securing a deployment is just as critical as building the application itself.", 
+          github: 'https://github.com/Bhavesh-Codes/devsecops-hackathon-demo', deployment: '', demo: '',
+          images: []
+        },
+        { 
+          id: '03', name: 'BlueMonitor', college: 'B.K. Birla College, Kalyan', hackathon: 'TechXpression', date: '2026', duration: '25H', team: 'Team Nirvana', tech: ['supabase', 'shadcn', 'nextjs', 'nodejs'], 
+          ps: "Communities and authorities lack accessible, real-time tracking for water contamination, making it difficult to assess safety and raise public awareness. We needed to develop an integrated platform that improves public awareness and enables efficient, centralized contamination tracking.", 
+          approach: "Handed a random IoT problem statement on the spot with zero physical hardware available, we had to pivot creatively. Instead of panicking, we simulated the hardware using a digital Arduino circuit and assumed manual data entry for the sensors. From there, we went all-in on the software ecosystem. I focused on building a visually immersive global tracking dashboard for water cleanliness, packing it with educational animations, actionable purification methods, and detailed cost breakdowns to heavily over-deliver on the awareness aspect of the prompt.", 
+          learning: "Beyond the incredible networking and connections made during the 25-hour lockdown, this was the hackathon where I finally conquered live deployments. I learned how to swiftly and correctly deploy our application using Vercel, ensuring we had a fully functional, live URL to show the judges. Most importantly, it taught me how to handle severe resource constraints—proving that a highly polished, visually impressive software interface can successfully carry a demo even when the physical hardware is missing.", 
+          github: 'https://github.com/Bhavesh-Codes/BlueMonitor.git', deployment: 'https://blue-monitor1.vercel.app/', demo: '',
+          images: [
+            { src: '3.a.png', label: 'Dashboard' },
+            { src: '3.b.png', label: 'Map View' },
+            { src: '3.c.png', label: 'Analytics' },
+            { src: '3.d.png', label: 'Detail' },
+            { src: '3.e.png', label: 'Mobile' }
+          ]
+        },
+        { 
+          id: '04', name: 'SpaceScope', college: 'Datta Meghe College, Navi Mumbai', hackathon: 'Code-A-Thon 2.0', date: '2026', duration: '12H', team: 'Team DeepSpace', tech: ['nextjs', 'threejs', 'vercel', 'framermotion'], 
+          ps: "Space events and satellite data are scattered across multiple platforms, making it difficult for the public to access real-time cosmic weather and mission info. The expected solution was an interactive, visual dashboard centralizing celestial event maps, space weather, and educational timelines.", 
+          approach: "Because we had weeks to iterate through online selection rounds before the offline finale, I poured my energy into making this visually spectacular. I leaned heavily into the cosmic theme, utilizing Three.js to render interactive 3D models and engineering complex 'scrollytelling' animations to make the educational content cinematic. Alongside integrating live APIs for real-time celestial events, I stepped beyond just coding and designed a B2B LMS subscription model for institutions to fulfill the prompt's business requirements.", 
+          learning: "This is the build I am most proud of, as it fundamentally shifted my mindset from just 'hacking' to building a viable, pitch-ready product. I learned how to weave business logic and monetization strategies directly into a technical architecture. However, because the heavy sequence frames and live API data resulted in noticeable initial load times, I recognized a major gap in my approach: the lack of data caching. Looking back, I realized I should have implemented a tool like Redis to cache the API responses and assets, which would have drastically optimized the performance.", 
+          github: 'https://github.com/Bhavesh-Codes/SpaceScope.git', deployment: 'https://deepspace.vercel.app/', demo: '',
+          images: [
+            { src: '4.a.png', label: 'Home' },
+            { src: '4.b.png', label: 'Globe' },
+            { src: '4.c.png', label: '3D View' },
+            { src: '4.d.png', label: 'Timeline' },
+            { src: '4.f.png', label: 'Events' },
+            { src: '4.g.png', label: 'Weather' },
+            { src: '4.h.png', label: 'Missions' },
+            { src: '4.i.png', label: 'Pricing' }
+          ]
+        },
+        { 
+          id: '05', name: 'Datachat', college: 'APSIT, Thane', hackathon: 'DataWeb', date: '2026', duration: '8H', team: 'Team iguessbro', tech: ['ollama', 'python', 'flask', 'mysql'], 
+          ps: "Non-technical stakeholders struggle to extract insights from structured data, requiring an explainable, hallucination-free AI query system. The goal was to build a dataset-agnostic platform allowing users to query structured CSV data securely using natural language.", 
+          approach: "To mitigate technical risks, we split our workflow into two parallel tracks. I spun up a Next.js architecture using the Gemini API as a safety net, while my teammate worked on deploying a local Llama 3 (8B) model via a Flask backend on a more capable machine. Once the local LLM was successfully configured and stable, I immediately scrapped my Next.js build and pivoted to his track. Together, we engineered a conversational pipeline that translates natural language into SQL, executes the queries against structured CSVs, and formats the output back into human-readable text paired with dynamic data visualizations.", 
+          learning: "This experience was a masterclass in strategic prototyping and knowing when to let go of your own code for a superior technical solution. Pivoting to the local Llama 3 model opened my eyes to the practical advantages of open-weight LLMs for data tasks—specifically, bypassing token limits, API costs, and rate restrictions when processing datasets. It also gave me deep hands-on experience with Text-to-SQL architectures, teaching me how to effectively bridge the gap between raw database logic and accessible, non-technical user interfaces.", 
+          github: 'https://github.com/Bigchungusfloopa/IGUESSBRO.git', deployment: '', demo: '',
+          images: [
+            { src: '5.a.png', label: 'Chat UI' },
+            { src: '5.b.png', label: 'Query Result' }
+          ]
+        },
+        { 
+          id: '06', name: 'Sukoon', college: 'APSIT, Thane', hackathon: 'Hackstreak 2.0', date: '2026', duration: '6H', team: 'Team Nirvana', tech: ['python', 'fastapi', 'react', 'javascript'], 
+          ps: "Fragmented medical records hinder doctors from accessing patient histories, while health authorities lack centralized data to track early disease outbreaks. The prompt required a system featuring a QR-based Smart Health Card for instant record retrieval and an admin dashboard for disease visualization.", 
+          approach: "We designed a QR-based Smart Health Card system with a strict focus on data integrity. Recognizing that patients shouldn't self-report complex medical data, we built a role-based architecture where only verified doctors and hospital staff can append records during visits, while patients retain view-only access. We used React for the frontend, Python (FastAPI) for the backend, and Supabase for the database. Knowing a QR-based system is useless if it only runs on localhost, we prioritized a live environment—hosting the backend on Render and the frontend on Netlify so the mobile scanning flow worked flawlessly during the pitch.", 
+          learning: "Winning this hackathon proved to me that real-world usability often beats out complex, half-finished local features. Ensuring the QR scanner functioned live on the judges' mobile devices was the exact differentiator that secured our victory. Beyond the deployment logistics, engineering the role-based access control gave me highly practical experience in handling sensitive data flows and enforcing strict user permissions within a full-stack application.", 
+          github: 'https://github.com/Bhavesh-Codes/hackstreak-2.0.git', deployment: '', demo: '',
+          images: [
+            { src: '6.a.png', label: 'Health Card' },
+            { src: '6.b.png', label: 'QR Scan' },
+            { src: '6.c.png', label: 'Dashboard' },
+            { src: '6.d.png', label: 'Records' }
+          ]
+        },
+        { 
+          id: '07', name: 'BioVault', college: 'APSIT, Thane', hackathon: 'Nakshatra', date: '2026', duration: '24H', team: 'Team StickyNotes', tech: ['reactnative', 'expo', 'crypto', 'biometrics'], 
+          ps: "Traditional crypto wallets rely heavily on vulnerable private keys or seed phrases, requiring a privacy-preserving, decentralized biometric alternative. We were tasked with developing a wallet system that authorizes secure blockchain transactions exclusively through device-native biometrics.", 
+          approach: "While this was built as a prototype for an online-only selection round, it marked my first major leap from web development into the mobile ecosystem. I configured React Native from scratch to build a decentralized wallet that hooked directly into device-native biometric sensors. I engineered an authentication flow where fingerprint recognition replaced easily forgotten seed phrases, tying the wallet's security layer directly to the user's physical hardware.", 
+          learning: "Failing to make the offline cut was a harsh but necessary lesson in project management. We fell into the trap of chasing absolute perfection, constantly making tweaks that led to a chaotic, last-minute submission—which likely cost us our spot. Still, I am incredibly proud of shipping my first functional phone app. It taught me the hard way that in high-stakes environments, speed and timely delivery are just as critical as the code itself; sometimes 'done' is better than 'perfect'.", 
+          github: 'https://github.com/Bhavesh-Codes/BioVault.git', deployment: '', demo: 'https://youtu.be/ENLzv71kIs4?si=ft3eJUPzofdY1FiH',
+          images: [
+            { src: '7.a.png', label: 'Wallet UI' },
+            { src: '7.b.png', label: 'Biometric Auth' },
+            { src: '7.c.png', label: 'Transactions' }
+          ]
+        }
+      ];
+    </script>
+
+    <div class="mb-8 md:mb-12">
+      <h2 class="font-mono text-[10px] md:text-xs font-bold tracking-[0.4em] text-gray-500 dark:text-gray-600 uppercase flex items-center space-x-4 transition-colors duration-300">
+        <span>Project Archives</span>
+        <span class="flex-1 h-px bg-gray-200 dark:bg-borderMuted transition-colors duration-300"></span>
+      </h2>
+    </div>
+
+    <section class="grid grid-cols-1 gap-6 md:gap-8 mb-16 md:mb-24" id="project-grid">
+      <!-- JavaScript will securely inject projects here -->
+    </section>
+
+    <footer class="border-t border-gray-200 dark:border-borderMuted pt-10 md:pt-16 pb-16 md:pb-24 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 transition-colors duration-300">
+      <div class="flex flex-col items-center md:items-start space-y-4 md:space-y-3 w-full text-center md:text-left">
+        <div class="font-mono text-[10px] sm:text-sm tracking-widest text-gray-600 dark:text-gray-400 transition-colors duration-300 flex flex-col md:block items-center gap-1.5">
+          <span class="text-gray-900 dark:text-white font-bold uppercase">Bhavesh Jalalbisht</span> 
+          <span class="hidden md:inline mx-1">//</span> 
+          <span class="text-accentLimeLight dark:text-accentLime uppercase">Hackathon Journey</span>
+        </div>
+        <div class="font-mono text-[9px] md:text-[10px] tracking-[0.2em] text-gray-500 dark:text-gray-400 uppercase flex items-center justify-center md:justify-start space-x-2 transition-colors duration-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-accentLimeLight dark:bg-accentLime animate-pulse"></span>
+          <span>Open to collaborations</span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-x-6 gap-y-5 md:flex md:flex-row justify-items-start md:justify-end md:gap-10 font-mono text-[9px] md:text-[10px] tracking-[0.3em] uppercase w-auto">
+        <a href="#" class="flex items-center space-x-2 md:space-x-3 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors group">
+          <svg class="w-3.5 h-3.5 md:w-4 md:h-4 grayscale group-hover:grayscale-0 transition-all" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.298 24 12c0-6.627-5.373-12-12-12"/></svg>
+          <span>GITHUB</span>
+        </a>
+        <a href="#" class="flex items-center space-x-2 md:space-x-3 text-gray-500 hover:text-[#0077b5] transition-colors group">
+          <svg class="w-3.5 h-3.5 md:w-4 md:h-4 grayscale group-hover:grayscale-0 transition-all" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          <span>LINKEDIN</span>
+        </a>
+        <a href="#" class="flex items-center space-x-2 md:space-x-3 text-gray-500 hover:text-accentCyanLight dark:hover:text-accentCyan transition-colors group">
+          <svg class="w-3.5 h-3.5 md:w-4 md:h-4 grayscale group-hover:grayscale-0 transition-all" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span>TWITTER</span>
+        </a>
+        <a href="mailto:bhavesh@example.com" class="flex items-center space-x-2 md:space-x-3 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors group">
+          <svg class="w-3.5 h-3.5 md:w-4 md:h-4 grayscale group-hover:grayscale-0 transition-all" fill="currentColor" viewBox="0 0 24 24"><path d="M24 5.457v13.909c0 .904-.732 1.635-1.635 1.635h-3.819V11.076L12 17.334l-6.546-6.258v9.926H1.635A1.635 1.635 0 0 1 0 19.366V5.457c0-1.356 1.501-2.097 2.545-1.228L12 12.73l9.455-8.501C22.499 3.36 24 4.101 24 5.457z"/></svg>
+          <span>EMAIL</span>
+        </a>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- ── Lightbox Modal ── -->
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button id="lb-close" aria-label="Close">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <button id="lb-prev" class="lb-btn" aria-label="Previous image">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="lb-img-wrap">
+      <img id="lb-img" src="" alt="" />
+    </div>
+    <button id="lb-next" class="lb-btn" aria-label="Next image">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </button>
+    <div id="lb-meta">
+      <span id="lb-label"></span>
+      <span id="lb-counter"></span>
+      <div id="lb-dots"></div>
+    </div>
+  </div>
+
+  <script>
+    // Theme initialization: respect system preference
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+
+    const setThemeFromSystem = () => {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        htmlElement.classList.add('dark');
+        localStorage.theme = 'dark';
+      } else {
+        htmlElement.classList.remove('dark');
+        localStorage.theme = 'light';
+      }
+    };
+
+    if (!localStorage.theme) {
+      setThemeFromSystem();
+    } else if (localStorage.theme === 'light') {
+      htmlElement.classList.remove('dark');
+    } else {
+      htmlElement.classList.add('dark');
+    }
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (!localStorage.theme) {
+        if (e.matches) htmlElement.classList.add('dark');
+        else htmlElement.classList.remove('dark');
+      }
+    });
+
+    themeToggleBtn.addEventListener('click', () => {
+      htmlElement.classList.toggle('dark');
+      if (htmlElement.classList.contains('dark')) {
+        localStorage.theme = 'dark';
+      } else {
+        localStorage.theme = 'light';
+      }
+    });
+
+    // Toggle card expand/collapse with dynamic text change
+    function toggleCard(id) {
+      const card = document.getElementById(`project-${id}`);
+      const isExpanded = card.classList.contains('expanded');
+      
+      // Collapse all other cards
+      document.querySelectorAll('article').forEach(c => {
+        c.classList.remove('expanded', 'card-active');
+        // Reset expand text inside each collapsed card
+        const toggleSpan = c.querySelector('.expand-toggle-text');
+        if (toggleSpan) toggleSpan.innerText = 'expand';
+      });
+      
+      if (!isExpanded) {
+        card.classList.add('expanded', 'card-active');
+        // Change text to "collapse"
+        const toggleSpan = card.querySelector('.expand-toggle-text');
+        if (toggleSpan) toggleSpan.innerText = 'collapse';
+        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      } else {
+        // Already expanded, but we are toggling off -> text already reset above
+      }
+    }
+
+    // Custom Icon Fetcher with pure fingerprint SVG for biometrics
+    const getTechIcon = (t) => {
+      const overrides = {
+        'shadcn': 'data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cline%20x1%3D%22208%22%20y1%3D%22128%22%20x2%3D%22128%22%20y2%3D%22208%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%3E%3C%2Fline%3E%3Cline%20x1%3D%22192%22%20y1%3D%2240%22%20x2%3D%2240%22%20y2%3D%22192%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%2224%22%3E%3C%2Fline%3E%3C%2Fsvg%3E',
+        'framermotion': 'data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2014%2021%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%25%22%20y1%3D%220%25%22%20x2%3D%22100%25%22%20y2%3D%22100%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23FF008C%22%20%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%230055FF%22%20%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M0%200h14v7H7zm0%207h7l7%207H7v7l-7-7z%22%20fill%3D%22url%28%23g%29%22%2F%3E%3C%2Fsvg%3E',
+        'vercel': 'data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M24%2022.525H0l12-21.05z%22%20fill%3D%22black%22%2F%3E%3C%2Fsvg%3E',
+        'ollama': 'https://api.iconify.design/simple-icons/ollama.svg',
+        'crypto': 'https://api.iconify.design/logos/ethereum.svg',
+        'reactnative': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg',
+        'expo': 'https://api.iconify.design/logos/expo-icon.svg',
+        'threejs': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/threejs/threejs-original.svg',
+        'flask': 'https://api.iconify.design/simple-icons/flask.svg',
+        'vitejs': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vitejs/vitejs-original.svg',
+        'bun': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bun/bun-original.svg',
+        // crisp fingerprint SVG for biometrics
+        'biometrics': 'data:image/svg+xml;utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/%3E%3Cpath d="M5 12a7 7 0 0 1 14 0"/%3E%3Cpath d="M8 12a4 4 0 0 1 8 0"/%3E%3Cpath d="M2 12a10 10 0 0 1 20 0"/%3E%3C/svg%3E',
+        'openai': 'https://api.iconify.design/simple-icons/openai.svg'
+      };
+      return overrides[t] || `https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/${t}/${t}-original.svg`;
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      
+      const grid = document.getElementById('project-grid');
+      
+      grid.innerHTML = PROJECTS.map(p => `
+        <article id="project-${p.id}" class="group bg-white dark:bg-cardBg border border-gray-200 dark:border-borderMuted rounded-[1.5rem] md:rounded-[2rem] p-5 sm:p-8 md:p-12 transition-all duration-300 hover:border-gray-300 dark:hover:border-gray-600 relative overflow-hidden shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none">
+          
+          <div class="absolute -bottom-6 -right-4 font-mono text-[120px] md:text-[240px] font-bold text-black/[0.03] dark:text-white/[0.02] select-none pointer-events-none z-0 leading-none transition-colors duration-300">
+              ${p.id}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-y-5 md:gap-y-0 md:gap-x-12 relative z-10">
+            
+            <div class="order-1 flex flex-wrap items-center gap-2 md:gap-3 md:mb-2">
+              <div class="flex items-center space-x-1.5 md:space-x-2 border border-lime-500/30 dark:border-[#c8f060]/30 bg-gray-50 dark:bg-black/40 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-300">
+                <svg class="w-3 h-3 md:w-3.5 md:h-3.5 text-lime-600 dark:text-[#c8f060]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span class="font-mono text-[9px] md:text-[10px] tracking-wider md:tracking-widest text-lime-600 dark:text-[#c8f060] uppercase">${p.date}</span>
+              </div>
+              <div class="flex items-center space-x-1.5 md:space-x-2 border border-cyan-500/30 dark:border-[#60d4f0]/30 bg-gray-50 dark:bg-black/40 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-300">
+                <svg class="w-3 h-3 md:w-3.5 md:h-3.5 text-cyan-600 dark:text-[#60d4f0]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span class="font-mono text-[9px] md:text-[10px] tracking-wider md:tracking-widest text-cyan-600 dark:text-[#60d4f0] uppercase">${p.duration}</span>
+              </div>
+              <div class="flex items-center space-x-1.5 md:space-x-2 border border-amber-500/30 dark:border-[#ffbd2e]/30 bg-gray-50 dark:bg-black/40 px-2 py-1 md:px-3 md:py-1.5 rounded-md transition-colors duration-300">
+                <svg class="w-3 h-3 md:w-3.5 md:h-3.5 text-amber-600 dark:text-[#ffbd2e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                <span class="font-mono text-[9px] md:text-[10px] tracking-wider md:tracking-widest text-amber-600 dark:text-[#ffbd2e] uppercase">${p.team}</span>
+              </div>
+            </div>
+
+            <div class="order-2 md:order-last md:col-start-2 md:row-span-6 flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-2 md:gap-4 w-full md:w-[200px]">
+              <a href="${p.github}" target="_blank" rel="noopener noreferrer" class="flex-1 md:flex-none md:w-full flex items-center justify-center space-x-2 bg-gray-900 text-white dark:bg-white dark:text-black px-3 py-2.5 md:px-5 md:py-3.5 rounded-lg md:rounded-2xl font-mono text-[9px] md:text-xs font-bold hover:bg-accentLimeLight dark:hover:bg-accentLime transition-all shadow-md dark:shadow-xl">
+                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.298 24 12c0-6.627-5.373-12-12-12"/></svg>
+                <span>GITHUB</span>
+              </a>
+              ${p.deployment ? `
+              <a href="${p.deployment}" target="_blank" rel="noopener noreferrer" class="flex-1 md:flex-none md:w-full flex items-center justify-center space-x-2 border border-gray-200 dark:border-borderMuted bg-gray-50 dark:bg-[#121212] text-gray-700 dark:text-white px-3 py-2.5 md:px-5 md:py-3.5 rounded-lg md:rounded-2xl font-mono text-[9px] md:text-xs font-bold hover:border-accentCyanLight hover:text-accentCyanLight dark:hover:border-accentCyan dark:hover:text-accentCyan transition-all shadow-sm dark:shadow-none">
+                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                <span>DEPLOYMENT</span>
+              </a>
+              ` : ''}
+              ${p.demo ? `
+              <a href="${p.demo}" target="_blank" rel="noopener noreferrer" class="flex-1 md:flex-none md:w-full flex items-center justify-center space-x-2 border border-gray-200 dark:border-borderMuted bg-gray-50 dark:bg-[#121212] text-gray-700 dark:text-white px-3 py-2.5 md:px-5 md:py-3.5 rounded-lg md:rounded-2xl font-mono text-[9px] md:text-xs font-bold hover:border-red-400 hover:text-red-500 dark:hover:border-red-500 dark:hover:text-red-400 transition-all shadow-sm dark:shadow-none">
+                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>DEMO</span>
+              </a>
+              ` : ''}
+            </div>
+
+            <div class="order-3 md:col-start-1 md:row-start-2 md:mb-4 md:mt-2">
+              <h3 class="text-accentLimeLight dark:text-accentLime font-mono text-[clamp(1.75rem,7vw,4rem)] leading-[1.2] font-bold uppercase tracking-normal drop-shadow-[0_0_15px_rgba(101,163,13,0.1)] dark:drop-shadow-[0_0_15px_rgba(200,240,96,0.15)] transition-colors duration-300 w-full pt-1 md:pt-0">
+                ${p.hackathon}
+              </h3>
+            </div>
+
+            <div class="order-4 md:col-start-1 md:row-start-3 md:mb-8">
+              <div class="flex items-center space-x-2 text-gray-500 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.2em] transition-colors duration-300">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span>${p.college}</span>
+              </div>
+            </div>
+
+            <div class="order-5 md:col-start-1 md:row-start-4 md:mb-10 w-full md:max-w-lg">
+                <div class="inline-flex flex-col bg-indigo-50/50 dark:bg-[#100f14] border border-indigo-100 dark:border-[#2a2b36] pl-5 pr-8 py-4 md:pl-6 md:pr-12 md:py-5 rounded-[1rem] md:rounded-[1.25rem] relative overflow-hidden group/box hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all duration-300 w-full md:w-auto">
+                    
+                    <div class="flex items-center space-x-2 md:space-x-3 mb-1 md:mb-2 relative z-10">
+                      <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]"></div>
+                      <span class="text-[9px] md:text-[10px] font-mono text-indigo-600 dark:text-indigo-400 tracking-[0.4em] uppercase font-bold transition-colors duration-300">PROJECT :</span>
+                    </div>
+                    
+                    <span class="text-[1.5rem] md:text-[2.25rem] font-bold text-indigo-950 dark:text-white font-mono uppercase tracking-tight relative z-10 leading-[1.2] mt-1 pt-1 block transition-colors duration-300">
+                      ${p.name}
+                    </span>
+                    
+                    <div class="absolute bottom-0 right-0 w-8 h-8 bg-indigo-500/5 -mb-4 -mr-4 rotate-45 border border-indigo-500/20"></div>
+                </div>
+            </div>
+            
+            <!-- Problem Statement with dynamic expand/collapse text -->
+            <div class="order-6 md:col-start-1 md:row-start-5 md:mb-8 cursor-pointer group/ps" onclick="toggleCard('${p.id}')">
+              <span class="text-accentLimeLight dark:text-[#c8f060] font-mono text-[9px] md:text-[10px] uppercase tracking-widest block mb-2 md:mb-3 opacity-90 dark:opacity-80 transition-colors duration-300">Problem Statement:</span>
+              <p class="ps-text text-gray-700 dark:text-gray-300 text-[15px] md:text-lg leading-relaxed max-w-2xl group-hover/ps:text-gray-900 dark:group-hover/ps:text-white transition-colors duration-300">
+                ${p.ps}
+              </p>
+              <div class="inline-flex items-center gap-1 mt-2 md:mt-3 text-accentLimeLight dark:text-accentCyan text-xs md:text-sm font-semibold expand-indicator">
+                <span class="expand-toggle-text">expand</span>
+                <svg class="w-3.5 h-3.5 md:w-4 md:h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Dynamic Tech Stack Array -->
+            <div class="order-7 md:col-start-1 md:row-start-6 flex flex-wrap gap-2 md:gap-3">
+              ${p.tech.map(t => {
+                const needsInvert = ['shadcn', 'vercel', 'nextjs', 'expo', 'ollama', 'github', 'bash', 'flask', 'threejs', 'openai'].includes(t);
+                return `
+                <div class="flex items-center space-x-1.5 md:space-x-2 bg-gray-100 dark:bg-[#0d0d0d] border border-gray-200 dark:border-[#222] px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg transition-colors duration-300" title="${t}">
+                  <img src="${getTechIcon(t)}" class="w-3.5 h-3.5 md:w-4 md:h-4 grayscale group-hover:grayscale-0 transition-all ${needsInvert ? 'dark:invert' : ''}" alt="${t}" onerror="this.src='https://placehold.co/16x16/000/fff?text=${t[0]}'">
+                  <span class="text-[9px] md:text-[10px] font-mono text-gray-500 dark:text-gray-400 uppercase tracking-widest transition-colors duration-300">${t}</span>
+                </div>
+                `
+              }).join('')}
+            </div>
+
+          </div>
+
+          <!-- EXPANDED AREA -->
+          <div class="expand-content relative z-10">
+            <div class="pt-6 mt-6 md:pt-10 md:mt-10 border-t border-gray-200 dark:border-borderMuted/40 transition-colors duration-300">
+              <div class="${p.images && p.images.length > 0 ? 'grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12' : ''}">
+                <div class="space-y-6 md:space-y-8">
+                  <div>
+                    <h4 class="text-accentLimeLight dark:text-accentLime font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-3 md:mb-4 opacity-80 dark:opacity-70 transition-colors duration-300">Approach</h4>
+                    <p class="text-gray-700 dark:text-gray-400 text-[13px] md:text-sm leading-relaxed transition-colors duration-300">${p.approach}</p>
+                  </div>
+                  <div>
+                    <h4 class="text-accentCyanLight dark:text-accentCyan font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-3 md:mb-4 opacity-80 dark:opacity-70 transition-colors duration-300">Learnings</h4>
+                    <p class="text-gray-700 dark:text-gray-400 text-[13px] md:text-sm leading-relaxed transition-colors duration-300">${p.learning}</p>
+                  </div>
+                </div>
+                ${p.images && p.images.length > 0 ? (() => {
+                  const mdCols = p.images.length <= 2 ? 'md-cols-2' : p.images.length <= 6 ? 'md-cols-3' : 'md-cols-4';
+                  return `
+                <div>
+                  <h4 class="text-gray-800 dark:text-white font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-4 md:mb-6 mt-6 lg:mt-0 opacity-80 dark:opacity-70 transition-colors duration-300">Visual Output</h4>
+                  <div class="photo-gallery ${mdCols}">
+                    ${p.images.map((img, idx) => `
+                    <div class="photo-item" onclick="openLightbox('${p.id}', ${idx})" role="button" tabindex="0" aria-label="View ${img.label} fullscreen">
+                      <img src="${img.src}" alt="${img.label}" loading="lazy">
+                      <div class="expand-overlay">
+                        <div class="expand-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 4l-5-5"/></svg>
+                        </div>
+                        <span class="expand-hint">click to expand</span>
+                      </div>
+                      <div class="photo-label">${img.label}</div>
+                    </div>
+                    `).join('')}
+                  </div>
+                </div>
+                  `;
+                })() : ''}
+              </div>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      // Terminal logic setup
+      const input = document.getElementById('terminal-input');
+      const output = document.getElementById('terminal-output');
+      const body = document.getElementById('terminal-body');
+      const cursor = document.getElementById('terminal-cursor');
+
+      const commands = {
+        help: () => `Available commands: <span class="text-accentLimeLight dark:text-accentLime">about</span>, <span class="text-accentLimeLight dark:text-accentLime">hackathons</span>, <span class="text-accentLimeLight dark:text-accentLime">skills</span>, <span class="text-accentLimeLight dark:text-accentLime">clear</span>.`,
+        about: () => `Bhavesh Jalalbisht is an engineer focused on rapid prototyping and building functional solutions within high-pressure environments. This page documents his 7 most recent hackathon deployments.`,
+        hackathons: () => PROJECTS.map(p => `<span class="text-accentCyanLight dark:text-accentCyan font-bold">${p.id}</span> // ${p.name} (${p.duration})`).join('<br>'),
+        skills: () => `Frontend: React, NextJS, Vue, Flutter<br>Backend: NodeJS, FastAPI, Supabase, PostgreSQL<br>Tools: Git, Docker, Prisma, OpenAI API`
+      };
+
+      input.addEventListener('input', () => {
+        // approximate character width based on text size mapping
+        const charWidth = window.innerWidth < 768 ? 7.2 : 8.4; 
+        cursor.style.transform = `translateX(${input.value.length * charWidth}px)`;
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const val = input.value.trim();
+          if (!val) return;
+
+          const line = document.createElement('div');
+          line.innerHTML = `<span class="text-accentCyanLight dark:text-accentCyan font-bold transition-colors duration-300">bhavesh@pc:~$</span> <span class="text-gray-900 dark:text-white transition-colors duration-300">${val}</span>`;
+          output.appendChild(line);
+
+          const cmd = val.toLowerCase();
+          if (cmd === 'clear') {
+            output.innerHTML = '';
+          } else if (commands[cmd]) {
+            const res = document.createElement('div');
+            res.className = 'text-gray-700 dark:text-gray-400 pl-3 md:pl-4 mb-2 transition-colors duration-300';
+            res.innerHTML = commands[cmd]();
+            output.appendChild(res);
+          } else {
+            const err = document.createElement('div');
+            err.className = 'text-red-500 dark:text-red-400/70 pl-3 md:pl-4 mb-2 transition-colors duration-300';
+            err.innerHTML = `command not found: ${val}`;
+            output.appendChild(err);
+          }
+
+          input.value = '';
+          cursor.style.transform = `translateX(0px)`;
+          body.scrollTop = body.scrollHeight;
+        }
+      });
+      // ── Lightbox logic ──
+      let lbImages = [];    // current project's image array
+      let lbIndex  = 0;
+      const lb      = document.getElementById('lightbox');
+      const lbImg   = document.getElementById('lb-img');
+      const lbLabel = document.getElementById('lb-label');
+      const lbCtr   = document.getElementById('lb-counter');
+      const lbDots  = document.getElementById('lb-dots');
+      const lbClose = document.getElementById('lb-close');
+      const lbPrev  = document.getElementById('lb-prev');
+      const lbNext  = document.getElementById('lb-next');
+
+      window.openLightbox = function(projectId, startIndex) {
+        const proj = PROJECTS.find(p => p.id === projectId);
+        if (!proj || !proj.images || proj.images.length === 0) return;
+        lbImages = proj.images;
+        lbIndex  = startIndex;
+        buildDots();
+        showImage(lbIndex, null);
+        lb.classList.add('lb-open');
+        document.body.style.overflow = 'hidden';
+        lbClose.focus();
+      };
+
+      function closeLightbox() {
+        lb.classList.remove('lb-open');
+        document.body.style.overflow = '';
+        // brief delay then clear src to free memory
+        setTimeout(() => { lbImg.src = ''; }, 320);
+      }
+
+      function buildDots() {
+        lbDots.innerHTML = lbImages.map((_, i) =>
+          `<div class="lb-dot${i === lbIndex ? ' active' : ''}" onclick="lbGoTo(${i})" aria-label="Image ${i+1}"></div>`
+        ).join('');
+      }
+
+      window.lbGoTo = function(i) { navigate(i, i < lbIndex ? 'left' : 'right'); };
+
+      function navigate(newIndex, direction) {
+        if (lbImages.length <= 1) return;
+        const outClass = direction === 'right' ? 'lb-slide-out-left' : 'lb-slide-out-right';
+        const inClass  = direction === 'right' ? 'lb-slide-in-left'  : 'lb-slide-in-right';
+
+        lbImg.classList.remove('lb-visible');
+        lbImg.classList.add(outClass);
+
+        setTimeout(() => {
+          lbImg.classList.remove(outClass);
+          lbImg.classList.add(inClass);
+          lbIndex = (newIndex + lbImages.length) % lbImages.length;
+          lbImg.src = lbImages[lbIndex].src;
+          lbImg.alt = lbImages[lbIndex].label;
+          lbLabel.textContent = lbImages[lbIndex].label;
+          lbCtr.textContent   = `${lbIndex + 1} / ${lbImages.length}`;
+          // update dots
+          document.querySelectorAll('.lb-dot').forEach((d, i) =>
+            d.classList.toggle('active', i === lbIndex)
+          );
+          // trigger reflow then animate in
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              lbImg.classList.remove(inClass);
+              lbImg.classList.add('lb-visible');
+            });
+          });
+        }, 220);
+      }
+
+      function showImage(index, direction) {
+        lbIndex = (index + lbImages.length) % lbImages.length;
+        lbImg.src = lbImages[lbIndex].src;
+        lbImg.alt = lbImages[lbIndex].label;
+        lbLabel.textContent = lbImages[lbIndex].label;
+        lbCtr.textContent   = `${lbIndex + 1} / ${lbImages.length}`;
+        lbImg.className = 'lb-visible';
+        document.querySelectorAll('.lb-dot').forEach((d, i) =>
+          d.classList.toggle('active', i === lbIndex)
+        );
+      }
+
+      lbClose.addEventListener('click', closeLightbox);
+      lbPrev.addEventListener('click', () => navigate(lbIndex - 1, 'left'));
+      lbNext.addEventListener('click', () => navigate(lbIndex + 1, 'right'));
+
+      // click outside image to close
+      lb.addEventListener('click', (e) => {
+        if (e.target === lb) closeLightbox();
+      });
+
+      // keyboard
+      document.addEventListener('keydown', (e) => {
+        if (!lb.classList.contains('lb-open')) return;
+        if (e.key === 'Escape')      closeLightbox();
+        if (e.key === 'ArrowLeft')   navigate(lbIndex - 1, 'left');
+        if (e.key === 'ArrowRight')  navigate(lbIndex + 1, 'right');
+      });
+
+      // keyboard on thumbnails
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.activeElement.classList.contains('photo-item')) {
+          document.activeElement.click();
+        }
+      });
+
+      // touch swipe inside lightbox
+      let touchStartX = 0;
+      lb.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].clientX;
+      }, { passive: true });
+      lb.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) < 40) return;
+        if (dx < 0) navigate(lbIndex + 1, 'right');
+        else        navigate(lbIndex - 1, 'left');
+      }, { passive: true });
+    });
+  </script>
+</body>
+</html>
