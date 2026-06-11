@@ -2,6 +2,16 @@
 <html lang="en" class="scroll-smooth">
 
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-E3NN2BL4CK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-E3NN2BL4CK');
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bhavesh Jalalbisht // Hackathon Journey</title>
@@ -971,11 +981,11 @@
                 <div class="space-y-6 md:space-y-8">
                   <div>
                     <h4 class="text-accentLimeLight dark:text-accentLime font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-3 md:mb-4 opacity-80 dark:opacity-70 transition-colors duration-300">Approach</h4>
-                    <p class="text-gray-700 dark:text-gray-400 text-[13px] md:text-sm leading-relaxed transition-colors duration-300">${p.approach}</p>
+                    <p class="text-gray-700 dark:text-gray-400 text-[15px] md:text-base leading-relaxed transition-colors duration-300">${p.approach}</p>
                   </div>
                   <div>
                     <h4 class="text-accentCyanLight dark:text-accentCyan font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-3 md:mb-4 opacity-80 dark:opacity-70 transition-colors duration-300">Learnings</h4>
-                    <p class="text-gray-700 dark:text-gray-400 text-[13px] md:text-sm leading-relaxed transition-colors duration-300">${p.learning}</p>
+                    <p class="text-gray-700 dark:text-gray-400 text-[15px] md:text-base leading-relaxed transition-colors duration-300">${p.learning}</p>
                   </div>
                 </div>
                 ${renderVisualOutput(p)}
