@@ -114,14 +114,14 @@
     /* ── Photo gallery grid ── */
     .photo-gallery {
       display: grid;
-      grid-template-columns: repeat(2, 1fr); /* max 2 on mobile */
+      grid-template-columns: repeat(2, 1fr); /* 2 columns side-by-side on mobile */
       gap: 0.625rem;
     }
     @media (min-width: 768px) {
-      .photo-gallery { gap: 0.875rem; }
-      .photo-gallery.md-cols-2 { grid-template-columns: repeat(2, 1fr); }
-      .photo-gallery.md-cols-3 { grid-template-columns: repeat(3, 1fr); }
-      .photo-gallery.md-cols-4 { grid-template-columns: repeat(4, 1fr); }
+      .photo-gallery {
+        grid-template-columns: 1fr; /* stacked vertically (1 column) on PC/desktop/tablet */
+        gap: 1rem;
+      }
     }
 
     .photo-item {
@@ -133,6 +133,11 @@
       cursor: pointer;
     }
     @media (min-width: 640px) { .photo-item { border-radius: 0.875rem; } }
+    @media (min-width: 768px) {
+      .photo-item {
+        aspect-ratio: 16/10; /* Wider, bigger layout for PC/desktop */
+      }
+    }
 
     .photo-item img {
       width: 100%;
@@ -643,6 +648,38 @@
     document.addEventListener("DOMContentLoaded", () => {
       
       const grid = document.getElementById('project-grid');
+
+      const renderVisualOutput = (p) => {
+        if (!p.images || p.images.length === 0) return '';
+        // Only show up to 2 images
+        const visibleImages = p.images.slice(0, 2);
+        return `
+          <div>
+            <h4 class="text-gray-800 dark:text-white font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-4 md:mb-6 mt-6 lg:mt-0 opacity-80 dark:opacity-70 transition-colors duration-300">Visual Output</h4>
+            <div class="photo-gallery">
+              ${visibleImages.map((img, idx) => `
+              <div class="photo-item" data-project-id="${p.id}" data-index="${idx}" role="button" tabindex="0" aria-label="View Image ${idx + 1} fullscreen">
+                <img src="${img.src}" alt="Image ${idx + 1}" loading="lazy">
+                <div class="expand-overlay">
+                  ${idx === 1 && p.images.length > 2 ? `
+                  <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                    <span class="font-mono text-xl md:text-2xl font-bold text-accentLime">+${p.images.length - 2}</span>
+                    <span class="font-mono text-[9px] uppercase tracking-widest text-white/90">View Gallery</span>
+                  </div>
+                  ` : `
+                  <div class="expand-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 4l-5-5"/></svg>
+                  </div>
+                  <span class="expand-hint">click to expand</span>
+                  `}
+                </div>
+                <div class="photo-label">0${idx + 1}</div>
+              </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      };
       
       grid.innerHTML = PROJECTS.map(p => `
         <article id="project-${p.id}" class="group bg-white dark:bg-cardBg border border-gray-200 dark:border-borderMuted rounded-[1.5rem] md:rounded-[2rem] p-5 sm:p-8 md:p-12 transition-all duration-300 hover:border-gray-300 dark:hover:border-gray-600 relative overflow-hidden shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none">
@@ -759,33 +796,22 @@
                     <p class="text-gray-700 dark:text-gray-400 text-[13px] md:text-sm leading-relaxed transition-colors duration-300">${p.learning}</p>
                   </div>
                 </div>
-                ${p.images && p.images.length > 0 ? (() => {
-                  const mdCols = p.images.length <= 2 ? 'md-cols-2' : p.images.length <= 6 ? 'md-cols-3' : 'md-cols-4';
-                  return `
-                <div>
-                  <h4 class="text-gray-800 dark:text-white font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-[0.3em] mb-4 md:mb-6 mt-6 lg:mt-0 opacity-80 dark:opacity-70 transition-colors duration-300">Visual Output</h4>
-                  <div class="photo-gallery ${mdCols}">
-                    ${p.images.map((img, idx) => `
-                    <div class="photo-item" onclick="openLightbox('${p.id}', ${idx})" role="button" tabindex="0" aria-label="View ${img.label} fullscreen">
-                      <img src="${img.src}" alt="${img.label}" loading="lazy">
-                      <div class="expand-overlay">
-                        <div class="expand-icon">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5h-4m4 0v-4m0 4l-5-5"/></svg>
-                        </div>
-                        <span class="expand-hint">click to expand</span>
-                      </div>
-                      <div class="photo-label">${img.label}</div>
-                    </div>
-                    `).join('')}
-                  </div>
-                </div>
-                  `;
-                })() : ''}
+                ${renderVisualOutput(p)}
               </div>
             </div>
           </div>
         </article>
       `).join('');
+
+      // Click delegation for photo items to open lightbox
+      grid.addEventListener('click', (e) => {
+        const photoItem = e.target.closest('.photo-item');
+        if (photoItem) {
+          const projectId = photoItem.dataset.projectId;
+          const index = parseInt(photoItem.dataset.index, 10);
+          window.openLightbox(projectId, index);
+        }
+      });
 
       // Terminal logic setup
       const input = document.getElementById('terminal-input');
@@ -887,8 +913,8 @@
           lbImg.classList.add(inClass);
           lbIndex = (newIndex + lbImages.length) % lbImages.length;
           lbImg.src = lbImages[lbIndex].src;
-          lbImg.alt = lbImages[lbIndex].label;
-          lbLabel.textContent = lbImages[lbIndex].label;
+          lbImg.alt = `Image ${lbIndex + 1}`;
+          lbLabel.textContent = '';
           lbCtr.textContent   = `${lbIndex + 1} / ${lbImages.length}`;
           // update dots
           document.querySelectorAll('.lb-dot').forEach((d, i) =>
@@ -907,8 +933,8 @@
       function showImage(index, direction) {
         lbIndex = (index + lbImages.length) % lbImages.length;
         lbImg.src = lbImages[lbIndex].src;
-        lbImg.alt = lbImages[lbIndex].label;
-        lbLabel.textContent = lbImages[lbIndex].label;
+        lbImg.alt = `Image ${lbIndex + 1}`;
+        lbLabel.textContent = '';
         lbCtr.textContent   = `${lbIndex + 1} / ${lbImages.length}`;
         lbImg.className = 'lb-visible';
         document.querySelectorAll('.lb-dot').forEach((d, i) =>
