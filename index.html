@@ -779,27 +779,22 @@
   </div>
 
   <script>
-    // Theme initialization: respect system preference
+    // Theme initialization: default to white mode, respect device dark mode, allow toggle
     const themeToggleBtn = document.getElementById('theme-toggle');
     const htmlElement = document.documentElement;
 
-    const setThemeFromSystem = () => {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        htmlElement.classList.add('dark');
-        localStorage.theme = 'dark';
-      } else {
-        htmlElement.classList.remove('dark');
-        localStorage.theme = 'light';
-      }
-    };
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    if (!localStorage.theme) {
-      setThemeFromSystem();
+    if (localStorage.theme === 'dark') {
+      htmlElement.classList.add('dark');
     } else if (localStorage.theme === 'light') {
       htmlElement.classList.remove('dark');
     } else {
-      htmlElement.classList.add('dark');
+      if (systemPrefersDark) {
+        htmlElement.classList.add('dark');
+      } else {
+        htmlElement.classList.remove('dark');
+      }
     }
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
